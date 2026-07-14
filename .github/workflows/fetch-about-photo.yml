@@ -1,0 +1,30 @@
+name: fetch-about-photo
+# Temporary utility: pulls the About page photo from the link-shared
+# Google Drive file into assets/photos/about.jpg. Delete after use.
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download About photo from Google Drive
+        run: |
+          mkdir -p assets/photos
+          curl -fL "https://drive.google.com/uc?export=download&id=1xYwcY6qzfmDxLzRy8eImkep3o7F_leVX" -o assets/photos/about.jpg
+          magic=$(head -c 3 assets/photos/about.jpg | xxd -p)
+          if [ "$magic" != "ffd8ff" ]; then
+            echo "::error::about.jpg is not a JPEG (magic=$magic)"
+            exit 1
+          fi
+          echo "about.jpg OK ($(stat -c%s assets/photos/about.jpg) bytes)"
+      - name: Commit photo
+        run: |
+          git config user.name "photo-fetch"
+          git config user.email "actions@users.noreply.github.com"
+          git add assets/photos/about.jpg
+          git commit -m "Add About page photo (fetched from Drive)"
+          git push
