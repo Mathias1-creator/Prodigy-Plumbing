@@ -1,0 +1,30 @@
+name: fetch-home-photo
+# Temporary utility: pulls the Home page photo from the link-shared
+# Google Drive file into assets/photos/home.png. Delete after use.
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Home photo from Google Drive
+        run: |
+          mkdir -p assets/photos
+          curl -fL "https://drive.google.com/uc?export=download&id=1dq7mMV94KgUSN_0iGi4Y8gpzj_K_GmH5" -o assets/photos/home.png
+          magic=$(head -c 8 assets/photos/home.png | xxd -p)
+          if [ "$magic" != "89504e470d0a1a0a" ]; then
+            echo "::error::home.png is not a PNG (magic=$magic)"
+            exit 1
+          fi
+          echo "home.png OK ($(stat -c%s assets/photos/home.png) bytes)"
+      - name: Commit photo
+        run: |
+          git config user.name "photo-fetch"
+          git config user.email "actions@users.noreply.github.com"
+          git add assets/photos/home.png
+          git commit -m "Add Home page photo (fetched from Drive)"
+          git push
