@@ -1,0 +1,30 @@
+name: fetch-logo
+# Temporary utility: pulls the client logo from a link-shared Google Drive file
+# and commits it as assets/logo.png. Delete this file once the logo is in the repo.
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download logo from Google Drive
+        run: |
+          curl -fL "https://drive.google.com/uc?export=download&id=1Qt9tjNZqnheGJ0iwhrGLI7y9Ol0oHRDa" -o assets/logo.png
+          python3 - <<'EOF'
+          import struct
+          data = open('assets/logo.png', 'rb').read(24)
+          assert data[:8] == b'\x89PNG\r\n\x1a\n', 'Not a PNG — is the Drive file link-shared?'
+          w, h = struct.unpack('>II', data[16:24])
+          print(f'Got PNG {w}x{h}')
+          EOF
+      - name: Commit logo
+        run: |
+          git config user.name "logo-fetch"
+          git config user.email "actions@users.noreply.github.com"
+          git add assets/logo.png
+          git commit -m "Add Prodigy Plumbing logo (fetched from Drive)"
+          git push
