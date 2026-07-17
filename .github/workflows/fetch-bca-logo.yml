@@ -1,0 +1,24 @@
+name: temp-fetch-bca-logo
+on: workflow_dispatch
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download BCA logo from Google Drive
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/bca.png "https://drive.google.com/uc?export=download&id=1CtFq7mhpTixj6nM6-PmKL_5mjRXWRbrH&confirm=t"
+          [ "$(head -c 4 /tmp/bca.png | xxd -p)" = "89504e47" ] || { echo "not a PNG"; head -c 300 /tmp/bca.png; exit 1; }
+          mkdir -p incoming
+          mv /tmp/bca.png incoming/bca-raw.png
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add incoming
+          git commit -m "temp: fetch BCA logo from Drive"
+          git push
